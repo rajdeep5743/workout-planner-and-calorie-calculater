@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Workout Planner & Calorie Calculator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#007bff">
+  <link rel="icon" href="data:,">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f2f2f2;
+    }
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #ccc;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    label {
+      font-weight: bold;
+    }
+    select, input, button {
+      width: 100%;
+      padding: 8px;
+      margin: 10px 0;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .output {
+      margin-top: 20px;
+    }
+    ul {
+      padding-left: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Beginner Workout Planner</h1>
+
+    <label for="goal">Goal:</label>
+    <select id="goal">
+      <option value="weight_loss">Weight Loss</option>
+      <option value="muscle_gain">Muscle Gain</option>
+      <option value="flexibility">Flexibility</option>
+    </select>
+
+    <label for="days">Workout Days per Week:</label>
+    <select id="days">
+      <option value="3">3 Days</option>
+      <option value="4">4 Days</option>
+      <option value="5">5 Days</option>
+      <option value="6">6 Days</option>
+      <option value="7">7 Days</option>
+    </select>
+
+    <label>Equipment Available:</label>
+    <label><input type="checkbox" id="dumbbells"> Dumbbells</label>
+    <label><input type="checkbox" id="yoga_mat"> Yoga Mat</label>
+    <label><input type="checkbox" id="none"> No Equipment</label>
+
+    <button onclick="generatePlan()">Generate Plan</button>
+    <button onclick="downloadPlan()">Download Plan</button>
+
+    <div class="output" id="output"></div>
+
+    <hr>
+
+    <h2>Calorie & Macro Calculator</h2>
+    <label for="age">Age (years):</label>
+    <input type="number" id="age" />
+
+    <label for="gender">Gender:</label>
+    <select id="gender">
+      <option value="male">Male</option>
+      <option value="female">Female</option>
+    </select>
+
+    <label for="height">Height (cm):</label>
+    <input type="number" id="height" />
+
+    <label for="weight">Weight (kg):</label>
+    <input type="number" id="weight" />
+
+    <label for="activity">Activity Level:</label>
+    <select id="activity">
+      <option value="1.2">Sedentary</option>
+      <option value="1.375">Light (1–3 days)</option>
+      <option value="1.55">Moderate (3–5 days)</option>
+      <option value="1.725">Active (6–7 days)</option>
+    </select>
+
+    <button onclick="calculateCalories()">Calculate Calories & Macros</button>
+
+    <div class="output" id="calorieOutput"></div>
+  </div>
+
+  <script>
+    const basePlans = {
+      weight_loss: ["30 min brisk walk", "20 min HIIT", "Circuit training", "Jump rope + core", "Cardio & stretch", "Tabata"],
+      muscle_gain: ["Push-ups & chest press", "Squats & lunges", "Deadlifts & rows", "Shoulder press & planks", "Arms + core", "Full-body strength"],
+      flexibility: ["Stretching routine", "Beginner yoga", "Pilates basics", "Mobility drills", "Breathwork", "Dynamic warm-up"]
+    };
+
+    const equipmentAddons = {
+      dumbbells: "Include dumbbell moves",
+      yoga_mat: "Add yoga/floor work",
+      none: "Use only bodyweight"
+    };
+
+    let generatedPlan = "";
+
+    window.onload = () => {
+      loadSavedInputs();
+      registerPWA();
+    };
+
+    function generatePlan() {
+      const goal = document.getElementById("goal").value;
+      const days = parseInt(document.getElementById("days").value);
+      const hasDumbbells = document.getElementById("dumbbells").checked;
+      const hasYogaMat = document.getElementById("yoga_mat").checked;
+      const noEquipment = document.getElementById("none").checked;
+      const outputDiv = document.getElementById("output");
+
+      const workouts = basePlans[goal];
+      let plan = "<h3>Your Weekly Workout Plan</h3><ul>";
+      generatedPlan = "Your Weekly Workout Plan:\n";
+
+      for (let i = 0; i < 7; i++) {
+        if (i < days) {
+          const workout = workouts[i % workouts.length];
+          let extra = "";
+
+          if (noEquipment) {
+            extra = ` (${equipmentAddons.none})`;
+          } else if (hasDumbbells && hasYogaMat) {
+            extra = ` (${equipmentAddons.dumbbells}, ${equipmentAddons.yoga_mat})`;
+          } else if (hasDumbbells) {
+            extra = ` (${equipmentAddons.dumbbells})`;
+          } else if (hasYogaMat) {
+            extra = ` (${equipmentAddons.yoga_mat})`;
+          }
+
+          plan += `<li>Day ${i + 1}: ${workout}${extra}</li>`;
+          generatedPlan += `Day ${i + 1}: ${workout}${extra}\n`;
+        } else {
+          plan += `<li>Day ${i + 1}: Rest Day</li>`;
+          generatedPlan += `Day ${i + 1}: Rest Day\n`;
+        }
+      }
+
+      plan += "</ul>";
+      outputDiv.innerHTML = plan;
+      localStorage.setItem("workoutPlan", generatedPlan);
+    }
+
+    function downloadPlan() {
+      if (!generatedPlan) return alert("Generate the plan first.");
+      const blob = new Blob([generatedPlan], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "workout_plan.txt";
+      a.click();
+    }
+
+    function calculateCalories() {
+      const age = parseInt(document.getElementById("age").value);
+      const gender = document.getElementById("gender").value;
+      const height = parseFloat(document.getElementById("height").value);
+      const weight = parseFloat(document.getElementById("weight").value);
+      const activity = parseFloat(document.getElementById("activity").value);
+      const goal = document.getElementById("goal").value;
+      const output = document.getElementById("calorieOutput");
+
+      if (isNaN(age) || isNaN(height) || isNaN(weight)) {
+        output.innerHTML = "<p>Please fill out all fields.</p>";
+        return;
+      }
+
+      const bmr = gender === "male"
+        ? 10 * weight + 6.25 * height - 5 * age + 5
+        : 10 * weight + 6.25 * height - 5 * age - 161;
+
+      const calories = Math.round(bmr * activity);
+
+      const macroPercents = {
+        weight_loss: [0.4, 0.3, 0.3],
+        muscle_gain: [0.3, 0.5, 0.2],
+        flexibility: [0.25, 0.5, 0.25]
+      };
+
+      const [p, c, f] = macroPercents[goal];
+      const protein = Math.round((calories * p) / 4);
+      const carbs = Math.round((calories * c) / 4);
+      const fat = Math.round((calories * f) / 9);
+
+      output.innerHTML = `
+        <h3>Daily Estimate</h3>
+        <p><strong>Calories:</strong> ${calories} kcal</p>
+        <p><strong>Protein:</strong> ${protein}g | <strong>Carbs:</strong> ${carbs}g | <strong>Fat:</strong> ${fat}g</p>
+      `;
+
+      const result = { age, gender, height, weight, activity, calories, protein, carbs, fat };
+      localStorage.setItem("calorieData", JSON.stringify(result));
+    }
+
+    function loadSavedInputs() {
+      const saved = JSON.parse(localStorage.getItem("calorieData"));
+      if (!saved) return;
+      document.getElementById("age").value = saved.age;
+      document.getElementById("gender").value = saved.gender;
+      document.getElementById("height").value = saved.height;
+      document.getElementById("weight").value = saved.weight;
+      document.getElementById("activity").value = saved.activity;
+    }
+
+    function registerPWA() {
+      const swCode = `
+        self.addEventListener('install', e => {
+          e.waitUntil(
+            caches.open('app').then(cache => cache.addAll(['./']))
+          );
+        });
+        self.addEventListener('fetch', e => {
+          e.respondWith(
+            caches.match(e.request).then(resp => resp || fetch(e.request))
+          );
+        });
+      `;
+      const blob = new Blob([swCode], { type: 'text/javascript' });
+      const swUrl = URL.createObjectURL(blob);
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register(swUrl).then(() => {
+          console.log("Service Worker registered.");
+        });
+      }
+    }
+  </script>
+</body>
+</html>
